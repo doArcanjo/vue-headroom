@@ -33,7 +33,8 @@ export default {
       currentScrollY: 0,
       lastScrollY: 0,
       state: '',
-      translate: 0
+      translate: 0,
+      isSupport3d: false
     }
   },
 
@@ -104,7 +105,8 @@ export default {
   },
 
   mounted () {
-    this.isSupport3d = support3d();
+    this.isSupport3d = support3d()
+
     if (!this.disabled) {
       this.scroller().addEventListener('scroll', this._handleScroll)
     }
@@ -119,17 +121,25 @@ export default {
 
   computed: {
     style () {
-      return {
+      let styles = {
         'position': this.isInTop ? 'fixed' : 'relative',
         'top': '0',
         'left': '0',
         'right': '0',
-        'z-index': this.isInTop ? this.zIndex : 1,
-        'transform': this.isSupport3d
-          ? `translate3d(0, ${this.translate}, 0)`
-          : `translateY(${this.translate})`,
-        'transition': this.isInTop ? `all ${this.speed}ms ${this.easing}` : null
+        'z-index': this.isInTop ? this.zIndex : 1
       }
+
+      // SSR cannot detect scroll position. To prevent flash when component mounted,
+      // just add transition styles in browser.
+      if (!this.$isServer) {
+        styles.transform = this.isSupport3d && !this.$isServer
+          ? `translate3d(0, ${this.translate}, 0)`
+          : `translateY(${this.translate})`
+
+        styles.transition = this.isInTop ? `all ${this.speed}ms ${this.easing}` : null
+      }
+
+      return styles
     },
 
     clsOpts () {
